@@ -1,0 +1,36 @@
+name: comment on a github commit
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+permissions:
+  contents: write
+
+jobs:
+  send-email:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: this will succeed
+        id: first
+        run: echo "This is Step 1"
+
+      - name: this will fail and get ignored at the next step
+        continue-on-error: true
+        id: to-be-ignored
+        run: there is nothing to run
+
+      - name: this will succeed
+        run: |
+          echo ${{ steps.first.outcome }}
+          echo ${{ steps.to-be-ignored.outcome }}
+
+      - name: Create commit comment
+        if: failure() || steps.to-be-ignored.outcome == 'failure'
+        uses: peter-evans/commit-comment@v3
+        with:
+          body: |
+            The `Automation Testing` action has failed!
+            - PR Assignee: @${{ github.event.pull_request.assignee.login }}
+            - outcome: `${{ steps.to-be-ignored.outcome }}`
